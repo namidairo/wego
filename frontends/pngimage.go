@@ -19,6 +19,7 @@ import (
 type pngimageConfig struct {
 	unit iface.UnitSystem
 	fontPath string
+	textFontPath string
 }
 
 func truncateString(str string, num int) string {
@@ -188,6 +189,7 @@ var (
 
 func (c *pngimageConfig) Setup() {
 	flag.StringVar(&c.fontPath, "pngimage-font", "weathericons-regular-webfont.ttf", "pngimage frontend: the path to the weather font")
+	flag.StringVar(&c.textFontPath, "pngimage-textfont", "Roboto-Regular.ttf", "pngimage frontend: the path to the text font")
 }
 
 func (c *pngimageConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
@@ -198,21 +200,25 @@ func (c *pngimageConfig) Render(r iface.Data, unitSystem iface.UnitSystem) {
 	}
 
 	dc := gg.NewContext(200*len(desiredTimesOfDay)+200, 150*len(r.Forecast)+250)
-	dc.SetRGBA(1, 1, 1, 0.5)
+	dc.SetRGB(1, 1, 1)
 	dc.Clear()
 
 	var err error
-	weatherFont, err = loadFontFace(c.fontPath, 24)
+	weatherFont, err = loadFontFace(c.fontPath, 32)
 	if err != nil {
 		log.Fatalf("Invalid font specified. Please download the ttf font at http://weathericons.io and link to it in the configuration file.")
 	}
 
-	textFont, _ = loadGoFontFace(20)
-	smallTextFont, _ = loadGoFontFace(14)
+	textFont, err = loadFontFace(c.textFontPath, 20)
+	smallTextFont, err = loadFontFace(c.textFontPath, 14)
+	if err != nil {
+		log.Fatalf("Invalid font specified. Please check your specified text font is valid.")
+	}
 
 	dc.SetHexColor("#00000")
 	dc.SetFontFace(textFont)
-	dc.DrawString(fmt.Sprintf("Weather for %s", r.Location), 100, 30)
+	currentTime := time.Now()
+	dc.DrawString(fmt.Sprintf("Weather for %s, %s", r.Location, currentTime.Format(time.Kitchen)), 100, 30)
 
 	c.formatCond(dc, r.Current, true, 100, 100)
 
